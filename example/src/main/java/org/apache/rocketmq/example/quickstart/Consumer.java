@@ -35,7 +35,8 @@ public class Consumer {
         /*
          * Instantiate with specified consumer group name.
          */
-        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("please_rename_unique_group_name_4");
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("lusong-consumer-group");
+        consumer.setNamesrvAddr("172.16.68.117:9876;172.16.68.118:9876");
 
         /*
          * Specify name server addresses.
@@ -57,7 +58,7 @@ public class Consumer {
         /*
          * Subscribe one more more topics to consume.
          */
-        consumer.subscribe("TopicTest", "*");
+        consumer.subscribe("lusong-topic", "*");
 
         /*
          *  Register callback to execute on arrival of messages fetched from brokers.
@@ -67,7 +68,7 @@ public class Consumer {
             @Override
             public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs,
                 ConsumeConcurrentlyContext context) {
-                System.out.printf("%s Receive New Messages: %s %n", Thread.currentThread().getName(), msgs);
+                System.out.printf(">>>>>>>>>>>>>>>>>>"+Thread.currentThread().getName() + " Receive New Messages: " + msgs + "%n\n");
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             }
         });

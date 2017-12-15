@@ -142,6 +142,52 @@ public class MessageStoreConfig {
     private boolean transientStorePoolEnable = false;
     private int transientStorePoolSize = 5;
     private boolean fastFailIfNoBufferInStorePool = false;
+    
+	private String msgStoreType="mongo";
+	private String mongoRepSetHosts;
+	private String mongoDbName ;
+	private String mongoUser;
+	private String mongoPassword;
+
+    public String getMsgStoreType() {
+		return msgStoreType;
+	}
+
+	public void setMsgStoreType(String msgStoreType) {
+		this.msgStoreType = msgStoreType;
+	}
+
+	public String getMongoRepSetHosts() {
+		return mongoRepSetHosts;
+	}
+
+	public void setMongoRepSetHosts(String mongoRepSetHosts) {
+		this.mongoRepSetHosts = mongoRepSetHosts;
+	}
+
+	public String getMongoDbName() {
+		return mongoDbName;
+	}
+
+	public void setMongoDbName(String mongoDbName) {
+		this.mongoDbName = mongoDbName;
+	}
+
+	public String getMongoUser() {
+		return mongoUser;
+	}
+
+	public void setMongoUser(String mongoUser) {
+		this.mongoUser = mongoUser;
+	}
+
+	public String getMongoPassword() {
+		return mongoPassword;
+	}
+
+	public void setMongoPassword(String mongoPassword) {
+		this.mongoPassword = mongoPassword;
+	}    
 
     public boolean isDebugLockEnable() {
         return debugLockEnable;
