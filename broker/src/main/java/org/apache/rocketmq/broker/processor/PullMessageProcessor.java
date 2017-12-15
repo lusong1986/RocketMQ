@@ -21,9 +21,12 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.FileRegion;
+
 import java.nio.ByteBuffer;
 import java.util.List;
+
 import org.apache.rocketmq.broker.BrokerController;
+import org.apache.rocketmq.broker.client.ConsumerAddressRecorder;
 import org.apache.rocketmq.broker.client.ConsumerGroupInfo;
 import org.apache.rocketmq.broker.filter.ConsumerFilterData;
 import org.apache.rocketmq.broker.filter.ConsumerFilterManager;
@@ -92,6 +95,10 @@ public class PullMessageProcessor implements NettyRequestProcessor {
         final PullMessageResponseHeader responseHeader = (PullMessageResponseHeader) response.readCustomHeader();
         final PullMessageRequestHeader requestHeader =
             (PullMessageRequestHeader) request.decodeCommandCustomHeader(PullMessageRequestHeader.class);
+        
+		// put queueId consumer addr to map
+		ConsumerAddressRecorder.putConsumerAddress(RemotingHelper.parseChannelRemoteAddr(channel),
+				requestHeader.getTopic() + "-" + requestHeader.getQueueId());    
 
         response.setOpaque(request.getOpaque());
 
