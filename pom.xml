@@ -45,27 +45,6 @@
         <tag>rocketmq-all-4.2.0</tag>
     </scm>
 
-    <mailingLists>
-        <mailingList>
-            <name>Development List</name>
-            <subscribe>dev-subscribe@rocketmq.apache.org</subscribe>
-            <unsubscribe>dev-unsubscribe@rocketmq.apache.org</unsubscribe>
-            <post>dev@rocketmq.apache.org</post>
-        </mailingList>
-        <mailingList>
-            <name>User List</name>
-            <subscribe>users-subscribe@rocketmq.apache.org</subscribe>
-            <unsubscribe>users-unsubscribe@rocketmq.apache.org</unsubscribe>
-            <post>users@rocketmq.apache.org</post>
-        </mailingList>
-        <mailingList>
-            <name>Commits List</name>
-            <subscribe>commits-subscribe@rocketmq.apache.org</subscribe>
-            <unsubscribe>commits-unsubscribe@rocketmq.apache.org</unsubscribe>
-            <post>commits@rocketmq.apache.org</post>
-        </mailingList>
-    </mailingLists>
-
     <developers>
         <developer>
             <id>Apache RocketMQ</id>
