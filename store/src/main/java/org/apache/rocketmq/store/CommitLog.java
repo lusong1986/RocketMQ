@@ -962,7 +962,7 @@ public class CommitLog {
 				if (currentTimeMillis >= (this.lastFlushTimestamp + flushPhysicQueueThoroughInterval)) {
 					this.lastFlushTimestamp = currentTimeMillis;
 					flushPhysicQueueLeastPages = 0;
-					printFlushProgress = (printTimes++ % 10) == 0;
+					printFlushProgress = (printTimes++ % 5) == 0;
 				}
 
 				try {
@@ -1011,8 +1011,8 @@ public class CommitLog {
 		}
 
 		private void printFlushProgress() {
-			// CommitLog.log.info("how much disk fall behind memory, "
-			// + CommitLog.this.mappedFileQueue.howMuchFallBehind());
+			CommitLog.log.info("how much disk fall behind memory, "
+					+ CommitLog.this.mappedFileQueue.howMuchFallBehind());
 		}
 
 		@Override
