@@ -15,6 +15,7 @@ package org.apache.rocketmq.tools.admin;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.client.QueryResult;
@@ -154,6 +156,161 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
 		default:
 			break;
 		}
+	}
+
+	/**
+	 * 
+	 * 上线consumerGroup的consumer clientIp
+	 * 
+	 * @param consumerGroup
+	 * @param clientIp
+	 * @return
+	 * @throws RemotingException
+	 * @throws MQClientException
+	 * @throws InterruptedException
+	 * @throws MQBrokerException
+	 */
+	@Override
+	public Map<String, Boolean> onlineConsumerClientIdsByGroup(final String consumerGroup, final String clientIp)
+			throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
+		final Collection<BrokerData> brokerDatas = this.examineBrokerClusterInfo().getBrokerAddrTable().values();
+		if (null == brokerDatas || brokerDatas.size() == 0) {
+			throw new MQClientException("Not found the broker data", null);
+		}
+
+		Map<String, Boolean> map = new HashMap<String, Boolean>();
+		final Iterator<BrokerData> iterator = brokerDatas.iterator();
+		while (iterator.hasNext()) {
+			final BrokerData brokerData = iterator.next();
+			final String brokAddr = brokerData.selectBrokerAddr();
+			log.info(">>>>>>>>>>onlineConsumerClientIdsByGroup broker addr:" + brokAddr);
+
+			if (brokAddr != null) {
+				boolean online = true;// mock
+										// this.mqClientInstance.getMQClientAPIImpl().onlineConsumerClientIdsByGroup(brokAddr,consumerGroup,
+										// clientIp, 5000);
+				map.put(brokAddr, online);
+			}
+		}
+
+		return map;
+	}
+
+	/**
+	 * 
+	 * 下线consumerGroup的consumer clientids
+	 * 
+	 * @param consumerGroup
+	 * @param clientIds
+	 * @return
+	 * @throws RemotingException
+	 * @throws MQClientException
+	 * @throws InterruptedException
+	 * @throws MQBrokerException
+	 */
+	@Override
+	public Map<String, Boolean> offlineConsumerClientIdsByGroup(final String consumerGroup, final String clientIds)
+			throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
+		final Collection<BrokerData> brokerDatas = this.examineBrokerClusterInfo().getBrokerAddrTable().values();
+		if (null == brokerDatas || brokerDatas.size() == 0) {
+			throw new MQClientException("Not found the broker data", null);
+		}
+
+		final Map<String, Boolean> map = new HashMap<String, Boolean>();
+		final Iterator<BrokerData> iterator = brokerDatas.iterator();
+		while (iterator.hasNext()) {
+			final BrokerData brokerData = iterator.next();
+			final String brokAddr = brokerData.selectBrokerAddr();
+			log.info(">>>>>>>>>>offlineConsumerClientIdsByGroup broker addr:" + brokAddr);
+
+			if (brokAddr != null) {
+				boolean offline = true;// mock
+										// this.mqClientInstance.getMQClientAPIImpl().offlineConsumerClientIdsByGroup(brokAddr,
+				// consumerGroup, clientIds, 5000);
+				map.put(brokAddr, offline);
+			}
+		}
+
+		return map;
+	}
+
+	public Map<String, ConsumerConnection> examineConsumerConnectionInfoByBroker(String consumerGroup)
+			throws InterruptedException, MQBrokerException, RemotingException, MQClientException {
+		String topic = MixAll.getRetryTopic(consumerGroup);
+		TopicRouteData topicRouteData = this.examineTopicRouteInfo(topic);
+
+		final Map<String, ConsumerConnection> map = new ConcurrentHashMap<String, ConsumerConnection>();
+		for (BrokerData bd : topicRouteData.getBrokerDatas()) {
+			String addr = bd.selectBrokerAddr();
+			if (addr != null) {
+				try {
+					final ConsumerConnection consumerConnectionList = this.mqClientInstance.getMQClientAPIImpl()
+							.getConsumerConnectionList(addr, consumerGroup, 3000);
+					if (consumerConnectionList != null) {
+						map.put(addr, consumerConnectionList);
+					}
+				} catch (Exception e) {
+					log.warn("examineConsumerConnectionInfoByBroker warn:" + e.getMessage());
+				}
+			}
+		}
+
+		return map;
+	}
+
+	public String getQueuesByBrokerAndConsumerAddress(final String brokAddr, String consumerAddress)
+			throws RemotingException, MQClientException, InterruptedException, MQBrokerException,
+			UnsupportedEncodingException {
+		if (StringUtils.isEmpty(brokAddr)) {
+			throw new MQClientException("brokAddr is empty", null);
+		}
+
+		String queues = this.mqClientInstance.getMQClientAPIImpl().getQueuesByConsumerAddress(brokAddr,
+				consumerAddress, 5000);
+		return queues;
+	}
+
+	@Override
+	public Map<String, String> getQueuesByConsumerAddress(String consumerAddress) throws RemotingException,
+			MQClientException, InterruptedException, MQBrokerException, UnsupportedEncodingException {
+		Collection<BrokerData> brokerDatas = this.examineBrokerClusterInfo().getBrokerAddrTable().values();
+		if (null == brokerDatas || brokerDatas.size() == 0) {
+			throw new MQClientException("Not found the broker data", null);
+		}
+
+		Map<String, String> map = new HashMap<String, String>();
+		final Iterator<BrokerData> iterator = brokerDatas.iterator();
+		while (iterator.hasNext()) {
+			BrokerData brokerData = iterator.next();
+			final String brokAddr = brokerData.selectBrokerAddr();
+			log.info(">>>>>>>>>>getQueuesByConsumerAddress broker addr:" + brokAddr);
+
+			if (brokAddr != null) {
+				String queues = this.mqClientInstance.getMQClientAPIImpl().getQueuesByConsumerAddress(brokAddr,
+						consumerAddress, 5000);
+				map.put(brokAddr, queues);
+			}
+		}
+
+		return map;
+	}
+
+	@Override
+	public Set<String> examineProducerGroups() throws RemotingException, MQClientException, InterruptedException,
+			MQBrokerException {
+		Collection<BrokerData> brokerDatas = this.examineBrokerClusterInfo().getBrokerAddrTable().values();
+		if (null == brokerDatas || brokerDatas.size() == 0) {
+			throw new MQClientException("Not found the broker data", null);
+		}
+
+		BrokerData brokerData = brokerDatas.iterator().next();
+		String addr = brokerData.selectBrokerAddr();
+
+		if (addr != null) {
+			return this.mqClientInstance.getMQClientAPIImpl().getProducerList(addr, 3000);
+		}
+
+		throw new MQClientException("Not found the broker", null);
 	}
 
 	@Override
