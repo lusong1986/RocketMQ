@@ -17,15 +17,26 @@
 package org.apache.rocketmq.broker.processor;
 
 import io.netty.channel.ChannelHandlerContext;
+
+import java.io.UnsupportedEncodingException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.rocketmq.broker.BrokerController;
 import org.apache.rocketmq.broker.client.ClientChannelInfo;
+import org.apache.rocketmq.broker.client.ConsumerAddressRecorder;
 import org.apache.rocketmq.common.MixAll;
+import org.apache.rocketmq.common.ThreadFactoryImpl;
 import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.common.constant.PermName;
 import org.apache.rocketmq.common.filter.ExpressionType;
 import org.apache.rocketmq.common.protocol.RequestCode;
 import org.apache.rocketmq.common.protocol.ResponseCode;
 import org.apache.rocketmq.common.protocol.body.CheckClientRequestBody;
+import org.apache.rocketmq.common.protocol.header.GetQueuesByConsumerAddressRequestHeader;
+import org.apache.rocketmq.common.protocol.header.GetQueuesByConsumerAddressResponseHeader;
 import org.apache.rocketmq.common.protocol.header.UnregisterClientRequestHeader;
 import org.apache.rocketmq.common.protocol.header.UnregisterClientResponseHeader;
 import org.apache.rocketmq.common.protocol.heartbeat.ConsumerData;
@@ -45,9 +56,24 @@ import org.slf4j.LoggerFactory;
 public class ClientManageProcessor implements NettyRequestProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
+	private final ScheduledExecutorService consumerClientIdsScheduledExecutorService = Executors
+			.newSingleThreadScheduledExecutor(new ThreadFactoryImpl(
+					"ClientManageProcessorConsumerClientIdScheduledThread"));
 
     public ClientManageProcessor(final BrokerController brokerController) {
         this.brokerController = brokerController;
+        
+		this.consumerClientIdsScheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					log.info("clearing getConsumerAddressQueueMap......");
+					ConsumerAddressRecorder.getConsumerAddressQueueMap().clear();
+				} catch (Exception e) {
+					log.error("schedule consumer client ids error.", e);
+				}
+			}
+		}, 60, 120, TimeUnit.SECONDS);
     }
 
     @Override
@@ -60,6 +86,8 @@ public class ClientManageProcessor implements NettyRequestProcessor {
                 return this.unregisterClient(ctx, request);
             case RequestCode.CHECK_CLIENT_CONFIG:
                 return this.checkClientConfig(ctx, request);
+    		case RequestCode.GET_QUEUES_BY_CONSUMER_ADDRESS:
+    			return this.getQueuesByConsumerAddress(ctx, request);
             default:
                 break;
         }
@@ -70,6 +98,40 @@ public class ClientManageProcessor implements NettyRequestProcessor {
     public boolean rejectRequest() {
         return false;
     }
+    
+
+	public RemotingCommand getQueuesByConsumerAddress(ChannelHandlerContext ctx, RemotingCommand request)
+			throws RemotingCommandException {
+		final RemotingCommand response = RemotingCommand
+				.createResponseCommand(GetQueuesByConsumerAddressResponseHeader.class);
+		final GetQueuesByConsumerAddressRequestHeader requestHeader = (GetQueuesByConsumerAddressRequestHeader) request
+				.decodeCommandCustomHeader(GetQueuesByConsumerAddressRequestHeader.class);
+
+		final ConcurrentHashMap<String, String> queueSet = ConsumerAddressRecorder.getConsumerAddressQueueMap().get(
+				requestHeader.getConsumerAddress());
+		if (queueSet != null && !queueSet.isEmpty()) {
+			try {
+				String topicQueues = "";
+				for (String topicQueue : queueSet.keySet()) {
+					topicQueues += topicQueue + ",";
+				}
+				log.info(">>>>>>>>>>>getQueuesByConsumerAddress, consumer address:"
+						+ requestHeader.getConsumerAddress() + ", topicQueues:" + topicQueues);
+				response.setBody(topicQueues.getBytes("UTF-8"));
+			} catch (UnsupportedEncodingException e) {
+				log.error("encoding exception:" + e.getMessage());
+				throw new RemotingCommandException("getQueuesByConsumerAddress encoding exception.");
+			}
+			response.setCode(ResponseCode.SUCCESS);
+			response.setRemark(null);
+			return response;
+		}
+
+		response.setCode(ResponseCode.SYSTEM_ERROR);
+		response.setRemark("no consumer for this group, " + requestHeader.getConsumerAddress());
+		return response;
+	}
+    
 
     public RemotingCommand heartBeat(ChannelHandlerContext ctx, RemotingCommand request) {
         RemotingCommand response = RemotingCommand.createResponseCommand(null);
