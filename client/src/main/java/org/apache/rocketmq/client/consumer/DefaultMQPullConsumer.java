@@ -17,7 +17,7 @@ import java.util.Set;
 
 import org.apache.rocketmq.client.ClientConfig;
 import org.apache.rocketmq.client.QueryResult;
-import org.apache.rocketmq.client.consumer.rebalance.AllocateMessageQueueAveragely;
+import org.apache.rocketmq.client.consumer.rebalance.AllocateMessageQueueConsistentHash;
 import org.apache.rocketmq.client.consumer.store.OffsetStore;
 import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
@@ -72,7 +72,7 @@ public class DefaultMQPullConsumer extends ClientConfig implements MQPullConsume
 	/**
 	 * Queue allocation algorithm
 	 */
-	private AllocateMessageQueueStrategy allocateMessageQueueStrategy = new AllocateMessageQueueAveragely();
+	private AllocateMessageQueueStrategy allocateMessageQueueStrategy = new AllocateMessageQueueConsistentHash();
 	/**
 	 * Whether the unit of subscription group
 	 */
