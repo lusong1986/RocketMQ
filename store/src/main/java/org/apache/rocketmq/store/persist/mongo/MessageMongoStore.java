@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -125,8 +126,8 @@ public class MessageMongoStore implements MsgStore {
 
 		try {
 			for (MessageExt messageExt : msgs) {
-				DBCollection mqMessageCollection = mqDb.getCollection("messages_"
-						+ YYYYMMDDFMT.format(new Date(messageExt.getStoreTimestamp())));
+				DBCollection mqMessageCollection = mqDb
+						.getCollection("messages_" + YYYYMMDDFMT.format(new Date(messageExt.getStoreTimestamp())));
 
 				final MongoMessage mongoMessage = generateMongoMessage(messageExt);
 
@@ -151,7 +152,8 @@ public class MessageMongoStore implements MsgStore {
 							query.put("commitLogOffset", messageExt.getPreparedTransactionOffset());
 							DBObject retObject = mqMessageCollection.findOne(query);
 							if (null == retObject) {
-								final String lastDay = YYYYMMDDFMT.format(lastday(new Date(messageExt.getStoreTimestamp())));
+								final String lastDay = YYYYMMDDFMT
+										.format(lastday(new Date(messageExt.getStoreTimestamp())));
 								mqMessageCollection = mqDb.getCollection("messages_" + lastDay);
 								if (mqMessageCollection != null) {
 									retObject = mqMessageCollection.findOne(query);
@@ -205,29 +207,29 @@ public class MessageMongoStore implements MsgStore {
 		mongoMessage.setUpdateTime(mongoMessage.getCreateTime());
 
 		final Map<String, String> msgProperties = messageExt.getProperties();
-		String _catChildMessageId1 = msgProperties.get("_catChildMessageId1");
-		if (null == _catChildMessageId1) {
-			_catChildMessageId1 = "";
-		}
-		mongoMessage.set_catChildMessageId1(_catChildMessageId1);
-
-		String _catParentMessageId = msgProperties.get("_catParentMessageId");
-		if (null == _catParentMessageId) {
-			_catParentMessageId = "";
-		}
-		mongoMessage.set_catParentMessageId(_catParentMessageId);
-
-		String _catParentMessageId1 = msgProperties.get("_catParentMessageId1");
-		if (null == _catParentMessageId1) {
-			_catParentMessageId1 = "";
-		}
-		mongoMessage.set_catParentMessageId1(_catParentMessageId1);
-
-		String _catRootMessageId = msgProperties.get("_catRootMessageId");
-		if (null == _catRootMessageId) {
-			_catRootMessageId = "";
-		}
-		mongoMessage.set_catRootMessageId(_catRootMessageId);
+//		String _catChildMessageId1 = msgProperties.get("_catChildMessageId1");
+//		if (null == _catChildMessageId1) {
+//			_catChildMessageId1 = "";
+//		}
+//		mongoMessage.set_catChildMessageId1(_catChildMessageId1);
+//
+//		String _catParentMessageId = msgProperties.get("_catParentMessageId");
+//		if (null == _catParentMessageId) {
+//			_catParentMessageId = "";
+//		}
+//		mongoMessage.set_catParentMessageId(_catParentMessageId);
+//
+//		String _catParentMessageId1 = msgProperties.get("_catParentMessageId1");
+//		if (null == _catParentMessageId1) {
+//			_catParentMessageId1 = "";
+//		}
+//		mongoMessage.set_catParentMessageId1(_catParentMessageId1);
+//
+//		String _catRootMessageId = msgProperties.get("_catRootMessageId");
+//		if (null == _catRootMessageId) {
+//			_catRootMessageId = "";
+//		}
+//		mongoMessage.set_catRootMessageId(_catRootMessageId);
 
 		String bodyContentStr = "";
 		try {
@@ -237,7 +239,8 @@ public class MessageMongoStore implements MsgStore {
 		}
 		mongoMessage.setContent(bodyContentStr);
 
-		mongoMessage.setPropertiesString(JSON.toJSONString(msgProperties));
+		mongoMessage.setPropertiesString(JSONObject.parseObject(JSON.toJSONString(msgProperties)));
+
 		return mongoMessage;
 	}
 

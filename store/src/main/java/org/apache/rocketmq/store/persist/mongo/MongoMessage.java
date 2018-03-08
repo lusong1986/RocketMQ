@@ -3,6 +3,8 @@ package org.apache.rocketmq.store.persist.mongo;
 import java.io.Serializable;
 import java.util.Date;
 
+import com.alibaba.fastjson.JSONObject;
+
 public class MongoMessage implements Serializable {
 
 	private static final long serialVersionUID = 7921763146996775373L;
@@ -70,11 +72,20 @@ public class MongoMessage implements Serializable {
 	/**
 	 * 消息属性
 	 */
-	private String propertiesString;
+	private JSONObject propertiesString;
+
 	/**
 	 * 消息体
 	 */
 	private String content;
+
+	public JSONObject getPropertiesString() {
+		return propertiesString;
+	}
+
+	public void setPropertiesString(JSONObject propertiesString) {
+		this.propertiesString = propertiesString;
+	}
 
 	public Date getBornTime() {
 		return bornTime;
@@ -250,14 +261,6 @@ public class MongoMessage implements Serializable {
 
 	public void setFlag(int flag) {
 		this.flag = flag;
-	}
-
-	public String getPropertiesString() {
-		return propertiesString;
-	}
-
-	public void setPropertiesString(String propertiesString) {
-		this.propertiesString = propertiesString;
 	}
 
 	public String getContent() {
