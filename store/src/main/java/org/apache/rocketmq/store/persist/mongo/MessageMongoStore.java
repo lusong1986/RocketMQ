@@ -8,7 +8,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.rocketmq.common.constant.LoggerName;
@@ -27,6 +26,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
+import com.mongodb.WriteConcern;
 
 public class MessageMongoStore implements MsgStore {
 
@@ -42,7 +42,7 @@ public class MessageMongoStore implements MsgStore {
 
 	private final SimpleDateFormat YYYYMMDDFMT = new SimpleDateFormat("yyyyMMdd");
 
-	// private final SimpleDateFormat myFmt2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	private static final String COLLECTION_PREFIX = "messages_";
 
 	public MessageMongoStore(MessageMongoStoreConfig messageMongoStoreConfig) {
 		this.messageMongoStoreConfig = messageMongoStoreConfig;
@@ -67,7 +67,7 @@ public class MessageMongoStore implements MsgStore {
 					if (mongoHost != null && mongoHost.length() > 0) {
 						String[] mongoServer = mongoHost.split(":");
 						if (mongoServer != null && mongoServer.length == 2) {
-							log.info(">>>>>>>>add mongo server>>" + mongoServer[0] + ":" + mongoServer[1]);
+							log.info("add mongo server>>" + mongoServer[0] + ":" + mongoServer[1]);
 							ServerAddress address = new ServerAddress(mongoServer[0].trim(),
 									Integer.parseInt(mongoServer[1].trim()));
 							addresses.add(address);
@@ -76,8 +76,6 @@ public class MessageMongoStore implements MsgStore {
 				}
 			}
 
-			// Caused by: java.security.NoSuchAlgorithmException: PBKDF2WithHmacSHA1 SecretKeyFactory not available
-			// need -Djava.ext.dirs=/home/anders/soft/jdk1.7.0_67/jre/lib/ext
 			List<MongoCredential> credentialsList = new LinkedList<MongoCredential>();
 			MongoCredential credential = MongoCredential.createCredential(messageMongoStoreConfig.getMongoUser(),
 					messageMongoStoreConfig.getMongoDbName(), messageMongoStoreConfig.getMongoPassword().toCharArray());
@@ -85,7 +83,7 @@ public class MessageMongoStore implements MsgStore {
 			mgClient = new MongoClient(addresses, credentialsList);
 			mqDb = mgClient.getDB(messageMongoStoreConfig.getMongoDbName());
 
-			log.info(">>>>>>>>>open mongodb successfully.");
+			log.info("open mongodb successfully.");
 			return true;
 		} catch (Throwable e) {
 			log.error("open mongo Exeption " + e.getMessage(), e);
@@ -115,25 +113,25 @@ public class MessageMongoStore implements MsgStore {
 	@Override
 	public boolean store(List<MessageExt> msgs) {
 		if (null == msgs || msgs.size() == 0) {
-			log.warn(">>>>>>>>msgs is empty.");
+			log.warn("store msgs is empty.");
 			return false;
 		}
 
 		if (null == this.mqDb) {
-			log.warn(">>>>>>>>mqDb is null.");
+			log.warn("mongo mqDb is null.");
 			return false;
 		}
 
 		try {
 			for (MessageExt messageExt : msgs) {
-				DBCollection mqMessageCollection = mqDb
-						.getCollection("messages_" + YYYYMMDDFMT.format(new Date(messageExt.getStoreTimestamp())));
+				DBCollection mqMessageCollection = mqDb.getCollection(
+						COLLECTION_PREFIX + YYYYMMDDFMT.format(new Date(messageExt.getStoreTimestamp())));
 
 				final MongoMessage mongoMessage = generateMongoMessage(messageExt);
 
 				try {
 					DBObject dbObject = BasicDBObjectUtils.castModel2DBObject(mongoMessage);
-					mqMessageCollection.insert(dbObject);
+					mqMessageCollection.insert(dbObject, WriteConcern.MAJORITY);
 
 					this.totalRecordsValue.addAndGet(1);
 
@@ -154,17 +152,17 @@ public class MessageMongoStore implements MsgStore {
 							if (null == retObject) {
 								final String lastDay = YYYYMMDDFMT
 										.format(lastday(new Date(messageExt.getStoreTimestamp())));
-								mqMessageCollection = mqDb.getCollection("messages_" + lastDay);
+								mqMessageCollection = mqDb.getCollection(COLLECTION_PREFIX + lastDay);
 								if (mqMessageCollection != null) {
 									retObject = mqMessageCollection.findOne(query);
-									log.info(">>>>>>>>>>>>>>query prepare message again in table messages_" + lastDay);
+									// log.info("query prepare message again in table messages_" + lastDay);
 								}
 							}
 
 							if (retObject != null) {
 								retObject.put("tranStatus", tranStatus);
 								mqMessageCollection.update(query, retObject);
-								log.info(">>>>>>>>>>>>>>update prepare message tranStatus: " + retObject);
+								// log.info("update prepare message tranStatus: " + retObject);
 							}
 						}
 					}
@@ -206,31 +204,6 @@ public class MessageMongoStore implements MsgStore {
 		mongoMessage.setCreateTime(new Date());
 		mongoMessage.setUpdateTime(mongoMessage.getCreateTime());
 
-		final Map<String, String> msgProperties = messageExt.getProperties();
-//		String _catChildMessageId1 = msgProperties.get("_catChildMessageId1");
-//		if (null == _catChildMessageId1) {
-//			_catChildMessageId1 = "";
-//		}
-//		mongoMessage.set_catChildMessageId1(_catChildMessageId1);
-//
-//		String _catParentMessageId = msgProperties.get("_catParentMessageId");
-//		if (null == _catParentMessageId) {
-//			_catParentMessageId = "";
-//		}
-//		mongoMessage.set_catParentMessageId(_catParentMessageId);
-//
-//		String _catParentMessageId1 = msgProperties.get("_catParentMessageId1");
-//		if (null == _catParentMessageId1) {
-//			_catParentMessageId1 = "";
-//		}
-//		mongoMessage.set_catParentMessageId1(_catParentMessageId1);
-//
-//		String _catRootMessageId = msgProperties.get("_catRootMessageId");
-//		if (null == _catRootMessageId) {
-//			_catRootMessageId = "";
-//		}
-//		mongoMessage.set_catRootMessageId(_catRootMessageId);
-
 		String bodyContentStr = "";
 		try {
 			bodyContentStr = new String(messageExt.getBody(), "utf-8");
@@ -239,7 +212,7 @@ public class MessageMongoStore implements MsgStore {
 		}
 		mongoMessage.setContent(bodyContentStr);
 
-		mongoMessage.setPropertiesString(JSONObject.parseObject(JSON.toJSONString(msgProperties)));
+		mongoMessage.setPropertiesString(JSONObject.parseObject(JSON.toJSONString(messageExt.getProperties())));
 
 		return mongoMessage;
 	}
