@@ -3,7 +3,9 @@
 [![GitHub release](https://img.shields.io/badge/release-download-orange.svg)](https://rocketmq.apache.org/dowloading/releases)
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
-**slave上接入mongodb副本集存储，方便消息统计、查询，结合[apache-rocketmq-console-ext]（https://github.com/lusong1986/apache-rocketmq-console-ext ） 使用**
+**主要新增功能点：
+
+**1.slave上接入mongodb副本集存储，方便消息统计、查询，结合[apache-rocketmq-console-ext]（https://github.com/lusong1986/apache-rocketmq-console-ext ） 使用**
 
 slave上配置mongodb例子,修改slave的broker配置文件 broker-b.properties加如下配置：
 * mongoRepSetHosts=127.0.0.1:28017,127.0.0.1:28087,127.0.0.1:28019
@@ -11,25 +13,15 @@ slave上配置mongodb例子,修改slave的broker配置文件 broker-b.properties
 * mongoUser=user
 * mongoPassword=password
 
-**[Apache RocketMQ](https://rocketmq.apache.org) is a distributed messaging and streaming platform with low latency, high performance and reliability, trillion-level capacity and flexible scalability.**
+**2.broker端支持灰度下线、上线消费者，并提供admin api**
 
-It offers a variety of features:
+**3.broker端支持查询生产组列表信息，并提供admin api**
 
-* Pub/Sub messaging model
-* Scheduled message delivery
-* Message retroactivity by time or offset
-* Log hub for streaming
-* Big data integration
-* Reliable FIFO and strict ordered messaging in the same queue
-* Efficient pull&push consumption model
-* Million-level message accumulation capacity in a single queue
-* Multiple messaging protocols like JMS and OpenMessaging
-* Flexible distributed scale-out deployment architecture
-* Lightning-fast batch message exchange system
-* Various message filter mechanics such as SQL and Tag
-* Docker images for isolated testing and cloud isolated clusters
-* Feature-rich administrative dashboard for configuration, metrics and monitoring
+**4.broker端支持查询每个消费组的消费数量统计，并提供admin api**
 
+**5.broker端支持查询每个消费者绑定的queue列表，并提供admin api**
+
+**6.消费客户端rebalance默认算法改为一致性hash算法**
 
 ----------
 
@@ -46,11 +38,7 @@ It offers a variety of features:
 ## Apache RocketMQ Community
 * [RocketMQ Community Projects](https://github.com/apache/rocketmq-externals)
 
-----------
 
-## Contributing
-We always welcome new contributions, whether for trivial cleanups, big new features or other material rewards, more details see [here](http://rocketmq.apache.org/docs/how-to-contribute/) 
- 
 ----------
 ## License
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html) Copyright (C) Apache Software Foundation
