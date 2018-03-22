@@ -3,15 +3,13 @@
 [![GitHub release](https://img.shields.io/badge/release-download-orange.svg)](https://rocketmq.apache.org/dowloading/releases)
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
-**slave上接入mongodb副本集存储，方便消息统计、查询，结合apache-rocketmq-console-ext（https://github.com/lusong1986/apache-rocketmq-console-ext） 使用**
+**slave上接入mongodb副本集存储，方便消息统计、查询，结合[apache-rocketmq-console-ext]（https://github.com/lusong1986/apache-rocketmq-console-ext ） 使用**
 
-**slave上配置mongodb例子
-* 修改slave的broker配置文件 broker-b.properties加如下配置：
+slave上配置mongodb例子,修改slave的broker配置文件 broker-b.properties加如下配置：
 * mongoRepSetHosts=127.0.0.1:28017,127.0.0.1:28087,127.0.0.1:28019
 * mongoDbName=mq_messages
 * mongoUser=user
 * mongoPassword=password
-**
 
 **[Apache RocketMQ](https://rocketmq.apache.org) is a distributed messaging and streaming platform with low latency, high performance and reliability, trillion-level capacity and flexible scalability.**
 
