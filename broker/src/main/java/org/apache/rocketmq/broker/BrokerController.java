@@ -432,11 +432,15 @@ public class BrokerController {
         this.remotingServer.registerProcessor(RequestCode.UNREGISTER_CLIENT, clientProcessor, this.clientManageExecutor);
         this.remotingServer.registerProcessor(RequestCode.CHECK_CLIENT_CONFIG, clientProcessor, this.clientManageExecutor);
 		this.remotingServer.registerProcessor(RequestCode.GET_QUEUES_BY_CONSUMER_ADDRESS, clientProcessor, this.clientManageExecutor);
+		this.remotingServer.registerProcessor(RequestCode.OFFLINE_CONSUMER_IDS_BY_GROUP, clientProcessor, this.clientManageExecutor);
+		this.remotingServer.registerProcessor(RequestCode.ONLINE_CONSUMER_IDS_BY_GROUP, clientProcessor, this.clientManageExecutor);
 
         this.fastRemotingServer.registerProcessor(RequestCode.HEART_BEAT, clientProcessor, this.clientManageExecutor);
         this.fastRemotingServer.registerProcessor(RequestCode.UNREGISTER_CLIENT, clientProcessor, this.clientManageExecutor);
         this.fastRemotingServer.registerProcessor(RequestCode.CHECK_CLIENT_CONFIG, clientProcessor, this.clientManageExecutor);
         this.fastRemotingServer.registerProcessor(RequestCode.GET_QUEUES_BY_CONSUMER_ADDRESS, clientProcessor, this.clientManageExecutor);
+        this.fastRemotingServer.registerProcessor(RequestCode.OFFLINE_CONSUMER_IDS_BY_GROUP, clientProcessor, this.clientManageExecutor);
+		this.fastRemotingServer.registerProcessor(RequestCode.ONLINE_CONSUMER_IDS_BY_GROUP, clientProcessor, this.clientManageExecutor);
 
         /**
          * ConsumerManageProcessor

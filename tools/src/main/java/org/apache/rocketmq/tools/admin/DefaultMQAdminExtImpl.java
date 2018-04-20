@@ -160,7 +160,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
 
 	/**
 	 * 
-	 * 上线consumerGroup的consumer clientIp
+	 * online consumer by clientIp
 	 * 
 	 * @param consumerGroup
 	 * @param clientIp
@@ -186,9 +186,8 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
 			log.info(">>>>>>>>>>onlineConsumerClientIdsByGroup broker addr:" + brokAddr);
 
 			if (brokAddr != null) {
-				boolean online = true;// mock
-										// this.mqClientInstance.getMQClientAPIImpl().onlineConsumerClientIdsByGroup(brokAddr,consumerGroup,
-										// clientIp, 5000);
+				boolean online = this.mqClientInstance.getMQClientAPIImpl().onlineConsumerClientIdsByGroup(brokAddr,
+						consumerGroup, clientIp, 5000);
 				map.put(brokAddr, online);
 			}
 		}
@@ -198,10 +197,10 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
 
 	/**
 	 * 
-	 * 下线consumerGroup的consumer clientids
+	 * offline consumer by clientids
 	 * 
 	 * @param consumerGroup
-	 * @param clientIds
+	 * @param clientIds clientIp or clientId
 	 * @return
 	 * @throws RemotingException
 	 * @throws MQClientException
@@ -224,9 +223,8 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
 			log.info(">>>>>>>>>>offlineConsumerClientIdsByGroup broker addr:" + brokAddr);
 
 			if (brokAddr != null) {
-				boolean offline = true;// mock
-										// this.mqClientInstance.getMQClientAPIImpl().offlineConsumerClientIdsByGroup(brokAddr,
-				// consumerGroup, clientIds, 5000);
+				boolean offline = this.mqClientInstance.getMQClientAPIImpl().offlineConsumerClientIdsByGroup(brokAddr,
+						consumerGroup, clientIds, 5000);
 				map.put(brokAddr, offline);
 			}
 		}

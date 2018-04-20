@@ -16,9 +16,13 @@
  */
 package org.apache.rocketmq.broker.processor;
 
-import io.netty.channel.ChannelHandlerContext;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.broker.BrokerController;
+import org.apache.rocketmq.broker.client.ConsumerClientIdIgnoreRecorder;
 import org.apache.rocketmq.broker.client.ConsumerGroupInfo;
 import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.common.protocol.RequestCode;
@@ -36,6 +40,8 @@ import org.apache.rocketmq.remoting.netty.NettyRequestProcessor;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.netty.channel.ChannelHandlerContext;
 
 public class ConsumerManageProcessor implements NettyRequestProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
@@ -80,9 +86,15 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
                 requestHeader.getConsumerGroup());
         if (consumerGroupInfo != null) {
             List<String> clientIds = consumerGroupInfo.getAllClientId();
-            if (!clientIds.isEmpty()) {
+            
+			final String filterConsumerClientIds = ConsumerClientIdIgnoreRecorder.getClientIdFilterMap().get(requestHeader.getConsumerGroup());
+
+			final List<String> newClientIds = filterOfflineClientIds(clientIds, filterConsumerClientIds,
+					requestHeader.getConsumerGroup());
+            
+            if (!newClientIds.isEmpty()) {
                 GetConsumerListByGroupResponseBody body = new GetConsumerListByGroupResponseBody();
-                body.setConsumerIdList(clientIds);
+                body.setConsumerIdList(newClientIds);
                 response.setBody(body.encode());
                 response.setCode(ResponseCode.SUCCESS);
                 response.setRemark(null);
@@ -100,6 +112,63 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
         response.setRemark("no consumer for this group, " + requestHeader.getConsumerGroup());
         return response;
     }
+    
+    
+	/**
+	 * filter clientids by filterConsumerClientIds
+	 * 
+	 * @param clientIds
+	 * @param filterConsumerClientIds
+	 * @param consumerGroup
+	 */
+	private List<String> filterOfflineClientIds(final List<String> clientIds, final String filterConsumerClientIds,
+			final String consumerGroup) {
+		if (StringUtils.isBlank(filterConsumerClientIds)) {
+			return clientIds;
+		}
+
+		final List<String> newClientIds = new ArrayList<String>();
+		try {
+			final String[] filterConsumerClientIdArray = filterConsumerClientIds.split(",");
+
+			final Iterator<String> clientIdsIterator = clientIds.iterator();
+			while (clientIdsIterator.hasNext()) {
+				final String clientId = clientIdsIterator.next();
+				final String clientHostIp = clientId.substring(0, clientId.indexOf("@"));
+				if (!filterClientId(clientId, clientHostIp, filterConsumerClientIdArray)) {
+					newClientIds.add(clientId);
+				}
+			}
+		} catch (Exception e) {
+			log.warn("filterOfflineClientIds exception:" + e.getMessage() + ",clientIds:" + clientIds
+					+ ",filterConsumerClientIds:" + filterConsumerClientIds, e);
+		}
+
+//		if (new Random().nextInt(50) == 0) {
+//			log.info(">>>>>>>>>>>after filtering offline clients, new consumer clientIds:" + newClientIds
+//					+ " for consumer group:" + consumerGroup);
+//		}
+
+		return newClientIds;
+	}
+
+	/**
+	 * filter clientId
+	 * 
+	 * @param clientId
+	 * @param clientHostIp
+	 * @param filterConsumerClientIdArray
+	 * @return
+	 */
+	private static boolean filterClientId(final String clientId, final String clientHostIp,
+			final String[] filterConsumerClientIdArray) {
+		for (final String filterClientId : filterConsumerClientIdArray) {
+			if (clientId.equals(filterClientId) || clientHostIp.equals(filterClientId)) {
+				return true;
+			}
+		}
+		return false;
+	}
 
     private RemotingCommand updateConsumerOffset(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {

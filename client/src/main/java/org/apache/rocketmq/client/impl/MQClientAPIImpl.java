@@ -103,6 +103,8 @@ import org.apache.rocketmq.common.protocol.header.GetProducerConnectionListReque
 import org.apache.rocketmq.common.protocol.header.GetQueuesByConsumerAddressRequestHeader;
 import org.apache.rocketmq.common.protocol.header.GetTopicStatsInfoRequestHeader;
 import org.apache.rocketmq.common.protocol.header.GetTopicsByClusterRequestHeader;
+import org.apache.rocketmq.common.protocol.header.OfflineConsumerClientIdsByGroupRequestHeader;
+import org.apache.rocketmq.common.protocol.header.OnlineConsumerClientIdsByGroupRequestHeader;
 import org.apache.rocketmq.common.protocol.header.PullMessageRequestHeader;
 import org.apache.rocketmq.common.protocol.header.PullMessageResponseHeader;
 import org.apache.rocketmq.common.protocol.header.QueryConsumeQueueRequestHeader;
@@ -200,6 +202,52 @@ public class MQClientAPIImpl {
 
 	public RemotingClient getRemotingClient() {
 		return remotingClient;
+	}
+	
+	public boolean offlineConsumerClientIdsByGroup(final String addr, final String consumerGroup,
+			final String clientIds, final long timeoutMillis) throws RemotingConnectException,
+			RemotingSendRequestException, RemotingTimeoutException, InterruptedException, MQBrokerException {
+
+		final OfflineConsumerClientIdsByGroupRequestHeader requestHeader = new OfflineConsumerClientIdsByGroupRequestHeader();
+		requestHeader.setClientIds(clientIds);
+		requestHeader.setConsumerGroup(consumerGroup);
+
+		RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.OFFLINE_CONSUMER_IDS_BY_GROUP,
+				requestHeader);
+
+		RemotingCommand response = this.remotingClient.invokeSync(addr, request, timeoutMillis);
+		switch (response.getCode()) {
+		case ResponseCode.SUCCESS: {
+			return true;
+		}
+		default:
+			break;
+		}
+
+		throw new MQBrokerException(response.getCode(), response.getRemark());
+	}
+
+	public boolean onlineConsumerClientIdsByGroup(final String addr, final String consumerGroup, final String clientIp,
+			final long timeoutMillis) throws RemotingConnectException, RemotingSendRequestException,
+			RemotingTimeoutException, InterruptedException, MQBrokerException {
+
+		final OnlineConsumerClientIdsByGroupRequestHeader requestHeader = new OnlineConsumerClientIdsByGroupRequestHeader();
+		requestHeader.setClientIp(clientIp);
+		requestHeader.setConsumerGroup(consumerGroup);
+
+		RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.ONLINE_CONSUMER_IDS_BY_GROUP,
+				requestHeader);
+
+		RemotingCommand response = this.remotingClient.invokeSync(addr, request, timeoutMillis);
+		switch (response.getCode()) {
+		case ResponseCode.SUCCESS: {
+			return true;
+		}
+		default:
+			break;
+		}
+
+		throw new MQBrokerException(response.getCode(), response.getRemark());
 	}
 
 	public String getQueuesByConsumerAddress(final String addr, final String consumerAddress, final long timeoutMillis)
