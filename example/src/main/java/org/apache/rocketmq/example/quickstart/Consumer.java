@@ -36,7 +36,7 @@ public class Consumer {
          * Instantiate with specified consumer group name.
          */
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("lusong-consumer-group");
-        consumer.setNamesrvAddr("172.16.68.117:9876;172.16.68.118:9876");
+        consumer.setNamesrvAddr("192.168.56.101:9876");
 
         /*
          * Specify name server addresses.
