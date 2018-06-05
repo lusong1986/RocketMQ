@@ -32,28 +32,15 @@ public class Consumer {
 
     public static void main(String[] args) throws InterruptedException, MQClientException {
 
-        /*
-         * Instantiate with specified consumer group name.
-         */
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("lusong-consumer-group");
         consumer.setNamesrvAddr("192.168.56.101:9876");
+        consumer.setConsumeThreadMax(10);
+        consumer.setConsumeThreadMin(5);
+        consumer.setConsumeConcurrentlyMaxSpan(20);
+        consumer.setPullBatchSize(32);
+        consumer.setPullThresholdForQueue(500);
 
-        /*
-         * Specify name server addresses.
-         * <p/>
-         *
-         * Alternatively, you may specify name server addresses via exporting environmental variable: NAMESRV_ADDR
-         * <pre>
-         * {@code
-         * consumer.setNamesrvAddr("name-server1-ip:9876;name-server2-ip:9876");
-         * }
-         * </pre>
-         */
-
-        /*
-         * Specify where to start in case the specified consumer group is a brand new one.
-         */
-        consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
+        consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET);
 
         /*
          * Subscribe one more more topics to consume.
@@ -69,6 +56,12 @@ public class Consumer {
             public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs,
                 ConsumeConcurrentlyContext context) {
                 System.out.printf(">>>>>>>>>>>>>>>>>>"+Thread.currentThread().getName() + " Receive New Messages: " + msgs + "%n\n");
+                
+                try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+				}
+                
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             }
         });
