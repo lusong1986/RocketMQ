@@ -52,13 +52,13 @@ public class Producer {
         producer.start();
         System.out.println(producer);
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 1; i++) {
             try {
 
                 /*
                  * Create a message instance, specifying topic, tag and message body.
                  */
-                Message msg = new Message("LUSONG_TOPIC" /* Topic */,
+                Message msg = new Message("LUSONG_TOPIC4" /* Topic */,
                     "TagA" /* Tag */,
                     ("Hello RocketMQ " + i).getBytes(RemotingHelper.DEFAULT_CHARSET) /* Message body */
                 );
