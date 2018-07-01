@@ -2,6 +2,11 @@ package org.apache.rocketmq.broker.client;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 
+ * @author lusong
+ *
+ */
 public class ConsumerAddressRecorder {
 
 	private static ConcurrentHashMap<String/* channelRemoteAddr */, ConcurrentHashMap<String, String>/* topic-queueId */> consumerAddressQueueMap = new ConcurrentHashMap<String, ConcurrentHashMap<String, String>>(
