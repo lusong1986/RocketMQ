@@ -13,9 +13,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.sysflag.MessageSysFlag;
+import org.apache.rocketmq.logging.InternalLogger;
+import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.store.persist.MsgStore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -30,7 +30,7 @@ import com.mongodb.WriteConcern;
 
 public class MessageMongoStore implements MsgStore {
 
-	private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+	private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
 	private MessageMongoStoreConfig messageMongoStoreConfig;
 

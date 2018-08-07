@@ -143,6 +143,7 @@ public class MessageStoreConfig {
     private int transientStorePoolSize = 5;
     private boolean fastFailIfNoBufferInStorePool = false;
     
+    //support mongo store
 	private String msgStoreType="mongo";
 	private String mongoRepSetHosts;
 	private String mongoDbName ;

@@ -19,10 +19,10 @@ package org.apache.rocketmq.common.protocol.body;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+@Deprecated
 public class GetConsumerStatusBody extends RemotingSerializable {
     private Map<MessageQueue, Long> messageQueueTable = new HashMap<MessageQueue, Long>();
     private Map<String, Map<MessageQueue, Long>> consumerTable =

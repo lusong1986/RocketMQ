@@ -165,6 +165,8 @@ public class RequestCode {
     public static final int SEND_BATCH_MESSAGE = 320;
 
     public static final int QUERY_CONSUME_QUEUE = 321;
+
+    public static final int QUERY_DATA_VERSION = 322;
     
     //从broker上获取所有producer的list
     public static final int GET_PRODUCER_LIST = 333;
@@ -177,5 +179,4 @@ public class RequestCode {
     
 	// 根据消费者address（1.1.1.1:2222）查询绑定的queue
 	public static final int GET_QUEUES_BY_CONSUMER_ADDRESS = 336;
-	
 }

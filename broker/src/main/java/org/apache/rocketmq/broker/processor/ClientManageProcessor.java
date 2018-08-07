@@ -48,22 +48,21 @@ import org.apache.rocketmq.common.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.common.subscription.SubscriptionGroupConfig;
 import org.apache.rocketmq.common.sysflag.TopicSysFlag;
 import org.apache.rocketmq.filter.FilterFactory;
+import org.apache.rocketmq.logging.InternalLogger;
+import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.netty.NettyRequestProcessor;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.netty.channel.ChannelHandlerContext;
 
 public class ClientManageProcessor implements NettyRequestProcessor {
-    private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
+    private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
-    
 	private final ScheduledExecutorService consumerClientIdsScheduledExecutorService = Executors
 			.newSingleThreadScheduledExecutor(new ThreadFactoryImpl(
-					"ClientManageProcessorConsumerClientIdScheduledThread"));
+					"ClientManageProcessorConsumerClientIdScheduledThread"));    
 
     public ClientManageProcessor(final BrokerController brokerController) {
         this.brokerController = brokerController;
@@ -75,10 +74,10 @@ public class ClientManageProcessor implements NettyRequestProcessor {
 					log.info("clearing getConsumerAddressQueueMap......");
 					ConsumerAddressRecorder.getConsumerAddressQueueMap().clear();
 				} catch (Exception e) {
-					log.error("schedule consumer client ids error.", e);
+					log.error("clear consumer client ids error.", e);
 				}
 			}
-		}, 60, 120, TimeUnit.SECONDS);
+		}, 60, 120, TimeUnit.SECONDS);        
     }
 
     @Override
@@ -96,7 +95,7 @@ public class ClientManageProcessor implements NettyRequestProcessor {
     		case RequestCode.OFFLINE_CONSUMER_IDS_BY_GROUP:
     			return this.offlineConsumerClientIdsByGroup(ctx, request);
     		case RequestCode.ONLINE_CONSUMER_IDS_BY_GROUP:
-    			return this.onlineConsumerClientIdsByGroup(ctx, request);    			
+    			return this.onlineConsumerClientIdsByGroup(ctx, request);                
             default:
                 break;
         }
@@ -108,7 +107,6 @@ public class ClientManageProcessor implements NettyRequestProcessor {
         return false;
     }
     
-
 	/**
 	 * offline consumer
 	 * 
@@ -219,8 +217,7 @@ public class ClientManageProcessor implements NettyRequestProcessor {
 		response.setCode(ResponseCode.SYSTEM_ERROR);
 		response.setRemark("no consumer for this group, " + requestHeader.getConsumerAddress());
 		return response;
-	}
-    
+	}    
 
     public RemotingCommand heartBeat(ChannelHandlerContext ctx, RemotingCommand request) {
         RemotingCommand response = RemotingCommand.createResponseCommand(null);

@@ -8,12 +8,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.rocketmq.common.ServiceThread;
 import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.common.message.MessageExt;
+import org.apache.rocketmq.logging.InternalLogger;
+import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.store.DefaultMessageStore;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 import org.apache.rocketmq.store.persist.mongo.MessageMongoStore;
 import org.apache.rocketmq.store.persist.mongo.MessageMongoStoreConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 消息持久化服务
@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
  */
 public class MsgPersistService extends ServiceThread {
 
-	private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+	private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
 	private static final String MONGO = "mongo";
 
@@ -69,9 +69,7 @@ public class MsgPersistService extends ServiceThread {
 
 		boolean offer = this.msgQueue.offer(msg);
 		if (!offer) {
-			if (log.isDebugEnabled()) {
-				log.debug("putMessage msg failed, {}", msg);
-			}
+			log.warn("putMessage msg failed, {}", msg);
 		}
 	}
 

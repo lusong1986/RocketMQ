@@ -1,5 +1,5 @@
 
-**主要新增功能点(这个fork是建立在apache rocketmq4.2.0之上)：**
+**主要新增功能点(这个fork是建立在apache rocketmq4.3.0之上)：**
 
 **1.slave上接入mongodb副本集存储，方便消息统计、查询，结合[apache-rocketmq-console-ext]（https://github.com/lusong1986/apache-rocketmq-console-ext ） 使用**
 
