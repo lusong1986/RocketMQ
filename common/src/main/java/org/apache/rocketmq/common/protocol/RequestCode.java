@@ -165,17 +165,6 @@ public class RequestCode {
     public static final int SEND_BATCH_MESSAGE = 320;
 
     public static final int QUERY_CONSUME_QUEUE = 321;
-    
-    //从broker上获取所有producer的list
-    public static final int GET_PRODUCER_LIST = 333;
-    
-	// 上线一台consumer ，clientIp
-	public static final int ONLINE_CONSUMER_IDS_BY_GROUP = 334;
-    
-	// 下线一批consumer client ids，逗号分隔
-	public static final int OFFLINE_CONSUMER_IDS_BY_GROUP = 335;
-    
-	// 根据消费者address（1.1.1.1:2222）查询绑定的queue
-	public static final int GET_QUEUES_BY_CONSUMER_ADDRESS = 336;
-	
+
+    public static final int QUERY_DATA_VERSION = 322;
 }

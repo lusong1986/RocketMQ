@@ -1,26 +1,48 @@
+## Apache RocketMQ [![Build Status](https://travis-ci.org/apache/rocketmq.svg?branch=master)](https://travis-ci.org/apache/rocketmq) [![Coverage Status](https://coveralls.io/repos/github/apache/rocketmq/badge.svg?branch=master)](https://coveralls.io/github/apache/rocketmq?branch=master)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.apache.rocketmq/rocketmq-all/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Corg.apache.rocketmq)
+[![GitHub release](https://img.shields.io/badge/release-download-orange.svg)](https://rocketmq.apache.org/dowloading/releases)
+[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
-**主要新增功能点(这个fork是建立在apache rocketmq4.2.0之上)：**
+**[Apache RocketMQ](https://rocketmq.apache.org) is a distributed messaging and streaming platform with low latency, high performance and reliability, trillion-level capacity and flexible scalability.**
 
-**1.slave上接入mongodb副本集存储，方便消息统计、查询，结合[apache-rocketmq-console-ext]（https://github.com/lusong1986/apache-rocketmq-console-ext ） 使用**
+It offers a variety of features:
 
-slave上配置mongodb例子,修改slave的broker配置文件 broker-b.properties加如下配置：
-* mongoRepSetHosts=127.0.0.1:28017,127.0.0.1:28087,127.0.0.1:28019
-* mongoDbName=mq_messages
-* mongoUser=user
-* mongoPassword=password
-
-**2.broker端支持灰度下线、上线消费者，并提供admin api**
-
-**3.broker端支持查询生产组列表信息，并提供admin api**
-
-**4.broker端支持查询每个消费组的消费数量统计，并提供admin api**
-
-**5.broker端支持查询每个消费者绑定的queue列表，并提供admin api**
-
-**6.消费客户端rebalance默认算法改为一致性hash算法**
-
+* Pub/Sub messaging model
+* Scheduled message delivery
+* Message retroactivity by time or offset
+* Log hub for streaming
+* Big data integration
+* Reliable FIFO and strict ordered messaging in the same queue
+* Efficient pull&push consumption model
+* Million-level message accumulation capacity in a single queue
+* Multiple messaging protocols like JMS and OpenMessaging
+* Flexible distributed scale-out deployment architecture
+* Lightning-fast batch message exchange system
+* Various message filter mechanics such as SQL and Tag
+* Docker images for isolated testing and cloud isolated clusters
+* Feature-rich administrative dashboard for configuration, metrics and monitoring
 
 
+----------
+
+## Learn it & Contact us
+* Mailing Lists: <https://rocketmq.apache.org/about/contact/>
+* Home: <https://rocketmq.apache.org>
+* Docs: <https://rocketmq.apache.org/docs/quick-start/>
+* Issues: <https://issues.apache.org/jira/browse/RocketMQ>
+* Ask: <https://stackoverflow.com/questions/tagged/rocketmq>
+ 
+
+----------
+
+## Apache RocketMQ Community
+* [RocketMQ Community Projects](https://github.com/apache/rocketmq-externals)
+
+----------
+
+## Contributing
+We always welcome new contributions, whether for trivial cleanups, big new features or other material rewards, more details see [here](http://rocketmq.apache.org/docs/how-to-contribute/) 
+ 
 ----------
 ## License
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html) Copyright (C) Apache Software Foundation

@@ -16,29 +16,17 @@
  */
 package org.apache.rocketmq.broker.processor;
 
-import java.io.UnsupportedEncodingException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.lang3.StringUtils;
+import io.netty.channel.ChannelHandlerContext;
 import org.apache.rocketmq.broker.BrokerController;
 import org.apache.rocketmq.broker.client.ClientChannelInfo;
-import org.apache.rocketmq.broker.client.ConsumerAddressRecorder;
-import org.apache.rocketmq.broker.client.ConsumerClientIdIgnoreRecorder;
 import org.apache.rocketmq.common.MixAll;
-import org.apache.rocketmq.common.ThreadFactoryImpl;
 import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.common.constant.PermName;
 import org.apache.rocketmq.common.filter.ExpressionType;
+import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.common.protocol.RequestCode;
 import org.apache.rocketmq.common.protocol.ResponseCode;
 import org.apache.rocketmq.common.protocol.body.CheckClientRequestBody;
-import org.apache.rocketmq.common.protocol.header.GetQueuesByConsumerAddressRequestHeader;
-import org.apache.rocketmq.common.protocol.header.GetQueuesByConsumerAddressResponseHeader;
-import org.apache.rocketmq.common.protocol.header.OfflineConsumerClientIdsByGroupRequestHeader;
-import org.apache.rocketmq.common.protocol.header.OnlineConsumerClientIdsByGroupRequestHeader;
 import org.apache.rocketmq.common.protocol.header.UnregisterClientRequestHeader;
 import org.apache.rocketmq.common.protocol.header.UnregisterClientResponseHeader;
 import org.apache.rocketmq.common.protocol.heartbeat.ConsumerData;
@@ -48,37 +36,18 @@ import org.apache.rocketmq.common.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.common.subscription.SubscriptionGroupConfig;
 import org.apache.rocketmq.common.sysflag.TopicSysFlag;
 import org.apache.rocketmq.filter.FilterFactory;
+import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.netty.NettyRequestProcessor;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.netty.channel.ChannelHandlerContext;
 
 public class ClientManageProcessor implements NettyRequestProcessor {
-    private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
+    private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
-    
-	private final ScheduledExecutorService consumerClientIdsScheduledExecutorService = Executors
-			.newSingleThreadScheduledExecutor(new ThreadFactoryImpl(
-					"ClientManageProcessorConsumerClientIdScheduledThread"));
 
     public ClientManageProcessor(final BrokerController brokerController) {
         this.brokerController = brokerController;
-        
-		this.consumerClientIdsScheduledExecutorService.scheduleAtFixedRate(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					log.info("clearing getConsumerAddressQueueMap......");
-					ConsumerAddressRecorder.getConsumerAddressQueueMap().clear();
-				} catch (Exception e) {
-					log.error("schedule consumer client ids error.", e);
-				}
-			}
-		}, 60, 120, TimeUnit.SECONDS);
     }
 
     @Override
@@ -91,12 +60,6 @@ public class ClientManageProcessor implements NettyRequestProcessor {
                 return this.unregisterClient(ctx, request);
             case RequestCode.CHECK_CLIENT_CONFIG:
                 return this.checkClientConfig(ctx, request);
-    		case RequestCode.GET_QUEUES_BY_CONSUMER_ADDRESS:
-    			return this.getQueuesByConsumerAddress(ctx, request);
-    		case RequestCode.OFFLINE_CONSUMER_IDS_BY_GROUP:
-    			return this.offlineConsumerClientIdsByGroup(ctx, request);
-    		case RequestCode.ONLINE_CONSUMER_IDS_BY_GROUP:
-    			return this.onlineConsumerClientIdsByGroup(ctx, request);    			
             default:
                 break;
         }
@@ -107,120 +70,6 @@ public class ClientManageProcessor implements NettyRequestProcessor {
     public boolean rejectRequest() {
         return false;
     }
-    
-
-	/**
-	 * offline consumer
-	 * 
-	 * @param ctx
-	 * @param request
-	 * @return
-	 */
-	public RemotingCommand offlineConsumerClientIdsByGroup(ChannelHandlerContext ctx, RemotingCommand request)
-			throws RemotingCommandException {
-		final OfflineConsumerClientIdsByGroupRequestHeader requestHeader = (OfflineConsumerClientIdsByGroupRequestHeader) request
-				.decodeCommandCustomHeader(OfflineConsumerClientIdsByGroupRequestHeader.class);
-		
-//		log.info(">>>>>>>>>>>offlineConsumerClientIdsByGroup :" + requestHeader.getClientIds() + " for consumer group:"
-//				+ requestHeader.getConsumerGroup());
-		String ignoreConsumerClientIds = ConsumerClientIdIgnoreRecorder.getClientIdFilterMap().get(requestHeader.getConsumerGroup());
-		if (StringUtils.isBlank(ignoreConsumerClientIds)) {
-			ignoreConsumerClientIds = requestHeader.getClientIds();
-		} else {
-			if (!ignoreConsumerClientIds.contains(requestHeader.getClientIds())
-					|| !requestHeader.getClientIds().contains("@")) {
-				ignoreConsumerClientIds += "," + requestHeader.getClientIds();
-			}
-		}
-
-		// clear consumer address queue map
-		ConsumerAddressRecorder.getConsumerAddressQueueMap().clear();
-
-		if (ignoreConsumerClientIds.length() <= 5000) {
-			ConsumerClientIdIgnoreRecorder.getClientIdFilterMap().put(requestHeader.getConsumerGroup(), ignoreConsumerClientIds);
-		}
-		//log.info(">>>>>>>>>>>after offlineConsumerClientIdsByGroup :" + ignoreConsumerClientIdsTable);
-
-		final RemotingCommand response = RemotingCommand.createResponseCommand(null);
-		response.setCode(ResponseCode.SUCCESS);
-		response.setRemark(null);
-		return response;
-	}
-
-	/**
-	 * online consumer by clientIp
-	 * 
-	 * @param ctx
-	 * @param request
-	 * @return
-	 */
-	public RemotingCommand onlineConsumerClientIdsByGroup(ChannelHandlerContext ctx, RemotingCommand request)
-			throws RemotingCommandException {
-		final OnlineConsumerClientIdsByGroupRequestHeader requestHeader = (OnlineConsumerClientIdsByGroupRequestHeader) request
-				.decodeCommandCustomHeader(OnlineConsumerClientIdsByGroupRequestHeader.class);
-
-		final String consumerClientIp = requestHeader.getClientIp();
-//		log.info(">>>>>>>>>>>onlineConsumerClientIdsByGroup :" + consumerClientIp + " for consumer group:"
-//				+ requestHeader.getConsumerGroup());
-		String ignoreConsumerClientIds = ConsumerClientIdIgnoreRecorder.getClientIdFilterMap().get(requestHeader.getConsumerGroup());
-		if (StringUtils.isNotBlank(ignoreConsumerClientIds) && ignoreConsumerClientIds.contains(consumerClientIp)) {
-			final StringBuilder newIgnoreConsumerClientIdsBuildler = new StringBuilder();
-			final String[] ignoreConsumerClientIdArray = ignoreConsumerClientIds.split(",");
-			if (ignoreConsumerClientIdArray != null && ignoreConsumerClientIdArray.length > 0) {
-				for (final String ignoreConsumerClientId : ignoreConsumerClientIdArray) {
-					if (!ignoreConsumerClientId.contains(consumerClientIp)) {
-						newIgnoreConsumerClientIdsBuildler.append("," + ignoreConsumerClientId);
-					}
-				}
-			}
-
-			final String newFilteredClientIds = newIgnoreConsumerClientIdsBuildler.toString().replaceFirst(",", "");
-			ConsumerClientIdIgnoreRecorder.getClientIdFilterMap().put(requestHeader.getConsumerGroup(), newFilteredClientIds);
-		}
-
-		// clear consumer address queue map
-		ConsumerAddressRecorder.getConsumerAddressQueueMap().clear();
-
-		//log.info(">>>>>>>>>>>after onlineConsumerClientIdsByGroup :" + ignoreConsumerClientIdsTable);
-
-		final RemotingCommand response = RemotingCommand.createResponseCommand(null);
-		response.setCode(ResponseCode.SUCCESS);
-		response.setRemark(null);
-		return response;
-	}
-
-	public RemotingCommand getQueuesByConsumerAddress(ChannelHandlerContext ctx, RemotingCommand request)
-			throws RemotingCommandException {
-		final RemotingCommand response = RemotingCommand
-				.createResponseCommand(GetQueuesByConsumerAddressResponseHeader.class);
-		final GetQueuesByConsumerAddressRequestHeader requestHeader = (GetQueuesByConsumerAddressRequestHeader) request
-				.decodeCommandCustomHeader(GetQueuesByConsumerAddressRequestHeader.class);
-
-		final ConcurrentHashMap<String, String> queueSet = ConsumerAddressRecorder.getConsumerAddressQueueMap().get(
-				requestHeader.getConsumerAddress());
-		if (queueSet != null && !queueSet.isEmpty()) {
-			try {
-				String topicQueues = "";
-				for (String topicQueue : queueSet.keySet()) {
-					topicQueues += topicQueue + ",";
-				}
-//				log.info(">>>>>>>>>>>getQueuesByConsumerAddress, consumer address:"
-//						+ requestHeader.getConsumerAddress() + ", topicQueues:" + topicQueues);
-				response.setBody(topicQueues.getBytes("UTF-8"));
-			} catch (UnsupportedEncodingException e) {
-				log.error("encoding exception:" + e.getMessage());
-				throw new RemotingCommandException("getQueuesByConsumerAddress encoding exception.");
-			}
-			response.setCode(ResponseCode.SUCCESS);
-			response.setRemark(null);
-			return response;
-		}
-
-		response.setCode(ResponseCode.SYSTEM_ERROR);
-		response.setRemark("no consumer for this group, " + requestHeader.getConsumerAddress());
-		return response;
-	}
-    
 
     public RemotingCommand heartBeat(ChannelHandlerContext ctx, RemotingCommand request) {
         RemotingCommand response = RemotingCommand.createResponseCommand(null);
