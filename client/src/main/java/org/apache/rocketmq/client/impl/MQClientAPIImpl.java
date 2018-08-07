@@ -21,12 +21,15 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.client.ClientConfig;
 import org.apache.rocketmq.client.consumer.PullCallback;
 import org.apache.rocketmq.client.consumer.PullResult;
@@ -101,8 +104,11 @@ import org.apache.rocketmq.common.protocol.header.GetMaxOffsetResponseHeader;
 import org.apache.rocketmq.common.protocol.header.GetMinOffsetRequestHeader;
 import org.apache.rocketmq.common.protocol.header.GetMinOffsetResponseHeader;
 import org.apache.rocketmq.common.protocol.header.GetProducerConnectionListRequestHeader;
+import org.apache.rocketmq.common.protocol.header.GetQueuesByConsumerAddressRequestHeader;
 import org.apache.rocketmq.common.protocol.header.GetTopicStatsInfoRequestHeader;
 import org.apache.rocketmq.common.protocol.header.GetTopicsByClusterRequestHeader;
+import org.apache.rocketmq.common.protocol.header.OfflineConsumerClientIdsByGroupRequestHeader;
+import org.apache.rocketmq.common.protocol.header.OnlineConsumerClientIdsByGroupRequestHeader;
 import org.apache.rocketmq.common.protocol.header.PullMessageRequestHeader;
 import org.apache.rocketmq.common.protocol.header.PullMessageResponseHeader;
 import org.apache.rocketmq.common.protocol.header.QueryConsumeQueueRequestHeader;
@@ -136,6 +142,7 @@ import org.apache.rocketmq.common.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.common.protocol.route.TopicRouteData;
 import org.apache.rocketmq.common.subscription.SubscriptionGroupConfig;
 import org.apache.rocketmq.logging.InternalLogger;
+import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.InvokeCallback;
 import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.RemotingClient;
@@ -228,6 +235,111 @@ public class MQClientAPIImpl {
     public void shutdown() {
         this.remotingClient.shutdown();
     }
+    
+	public boolean offlineConsumerClientIdsByGroup(final String addr, final String consumerGroup,
+			final String clientIds, final long timeoutMillis) throws RemotingConnectException,
+			RemotingSendRequestException, RemotingTimeoutException, InterruptedException, MQBrokerException {
+
+		final OfflineConsumerClientIdsByGroupRequestHeader requestHeader = new OfflineConsumerClientIdsByGroupRequestHeader();
+		requestHeader.setClientIds(clientIds);
+		requestHeader.setConsumerGroup(consumerGroup);
+
+		RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.OFFLINE_CONSUMER_IDS_BY_GROUP,
+				requestHeader);
+
+		RemotingCommand response = this.remotingClient.invokeSync(addr, request, timeoutMillis);
+		switch (response.getCode()) {
+		case ResponseCode.SUCCESS: {
+			return true;
+		}
+		default:
+			break;
+		}
+
+		throw new MQBrokerException(response.getCode(), response.getRemark());
+	}
+
+	public boolean onlineConsumerClientIdsByGroup(final String addr, final String consumerGroup, final String clientIp,
+			final long timeoutMillis) throws RemotingConnectException, RemotingSendRequestException,
+			RemotingTimeoutException, InterruptedException, MQBrokerException {
+
+		final OnlineConsumerClientIdsByGroupRequestHeader requestHeader = new OnlineConsumerClientIdsByGroupRequestHeader();
+		requestHeader.setClientIp(clientIp);
+		requestHeader.setConsumerGroup(consumerGroup);
+
+		RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.ONLINE_CONSUMER_IDS_BY_GROUP,
+				requestHeader);
+
+		RemotingCommand response = this.remotingClient.invokeSync(addr, request, timeoutMillis);
+		switch (response.getCode()) {
+		case ResponseCode.SUCCESS: {
+			return true;
+		}
+		default:
+			break;
+		}
+
+		throw new MQBrokerException(response.getCode(), response.getRemark());
+	}
+
+	public String getQueuesByConsumerAddress(final String addr, final String consumerAddress, final long timeoutMillis)
+			throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException,
+			InterruptedException, MQBrokerException, UnsupportedEncodingException {
+		final GetQueuesByConsumerAddressRequestHeader requestHeader = new GetQueuesByConsumerAddressRequestHeader();
+		requestHeader.setConsumerAddress(consumerAddress);
+
+		RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.GET_QUEUES_BY_CONSUMER_ADDRESS,
+				requestHeader);
+
+		RemotingCommand response = this.remotingClient.invokeSync(addr, request, timeoutMillis);
+		switch (response.getCode()) {
+		case ResponseCode.SUCCESS: {
+			return new String(response.getBody(), "UTF-8");
+		}
+		default:
+			break;
+		}
+
+		throw new MQBrokerException(response.getCode(), response.getRemark());
+	}
+
+	public Set<String> getProducerList(final String addr, final long timeoutMillis) throws RemotingConnectException,
+			RemotingSendRequestException, RemotingTimeoutException, InterruptedException, MQBrokerException {
+
+		CommandCustomHeader requestHeader = new CommandCustomHeader() {
+			@Override
+			public void checkFields() throws RemotingCommandException {
+			}
+		};
+
+		RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.GET_PRODUCER_LIST, requestHeader);
+
+		RemotingCommand response = this.remotingClient.invokeSync(addr, request, timeoutMillis);
+		switch (response.getCode()) {
+		case ResponseCode.SUCCESS: {
+			try {
+				String data = new String(response.getBody(), "utf-8");
+				String[] producerGroups = StringUtils.split(data, ",");
+
+				Set<String> pgroups = new HashSet<String>();
+				if (producerGroups != null && producerGroups.length > 0) {
+					for (String grp : producerGroups) {
+						pgroups.add(grp);
+					}
+				}
+
+				return pgroups;
+			} catch (Exception e) {
+				log.warn("getProducerList error:" + e.getMessage());
+			}
+
+		}
+		default:
+			break;
+		}
+
+		throw new MQBrokerException(response.getCode(), response.getRemark());
+	}    
 
     public void createSubscriptionGroup(final String addr, final SubscriptionGroupConfig config,
         final long timeoutMillis)

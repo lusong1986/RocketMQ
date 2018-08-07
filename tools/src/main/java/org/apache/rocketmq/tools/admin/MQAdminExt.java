@@ -58,6 +58,24 @@ public interface MQAdminExt extends MQAdmin {
 
     void shutdown();
 
+	Set<String> examineProducerGroups() throws RemotingException, MQClientException, InterruptedException,
+			MQBrokerException;
+
+	Map<String, String> getQueuesByConsumerAddress(final String consumerAddress) throws RemotingException,
+			MQClientException, InterruptedException, MQBrokerException, UnsupportedEncodingException;
+
+	Map<String, Boolean> onlineConsumerClientIdsByGroup(final String consumerGroup, final String clientIp)
+			throws RemotingException, MQClientException, InterruptedException, MQBrokerException;
+
+	Map<String, Boolean> offlineConsumerClientIdsByGroup(final String consumerGroup, final String clientIds)
+			throws RemotingException, MQClientException, InterruptedException, MQBrokerException;
+
+	Map<String, ConsumerConnection> examineConsumerConnectionInfoByBroker(String consumerGroup)
+			throws InterruptedException, MQBrokerException, RemotingException, MQClientException;
+
+	String getQueuesByBrokerAndConsumerAddress(final String brokAddr, String consumerAddress) throws RemotingException,
+			MQClientException, InterruptedException, MQBrokerException, UnsupportedEncodingException;    
+
     void updateBrokerConfig(final String brokerAddr, final Properties properties) throws RemotingConnectException,
         RemotingSendRequestException, RemotingTimeoutException, UnsupportedEncodingException, InterruptedException, MQBrokerException;
 

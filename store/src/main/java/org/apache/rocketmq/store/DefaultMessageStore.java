@@ -55,6 +55,7 @@ import org.apache.rocketmq.store.config.StorePathConfigHelper;
 import org.apache.rocketmq.store.ha.HAService;
 import org.apache.rocketmq.store.index.IndexService;
 import org.apache.rocketmq.store.index.QueryOffsetResult;
+import org.apache.rocketmq.store.persist.MsgPersistService;
 import org.apache.rocketmq.store.schedule.ScheduleMessageService;
 import org.apache.rocketmq.store.stats.BrokerStatsManager;
 
@@ -74,6 +75,9 @@ public class DefaultMessageStore implements MessageStore {
     private final CleanCommitLogService cleanCommitLogService;
 
     private final CleanConsumeQueueService cleanConsumeQueueService;
+    
+	// 消息持久服务(mongo)
+	private final MsgPersistService msgPersistService;
 
     private final IndexService indexService;
 
@@ -126,6 +130,7 @@ public class DefaultMessageStore implements MessageStore {
         this.cleanCommitLogService = new CleanCommitLogService();
         this.cleanConsumeQueueService = new CleanConsumeQueueService();
         this.storeStatsService = new StoreStatsService();
+        this.msgPersistService = new MsgPersistService(this);
         this.indexService = new IndexService(this);
         this.haService = new HAService(this);
 
@@ -224,6 +229,10 @@ public class DefaultMessageStore implements MessageStore {
         if (this.scheduleMessageService != null && SLAVE != messageStoreConfig.getBrokerRole()) {
             this.scheduleMessageService.start();
         }
+        
+		if (this.msgPersistService != null && SLAVE == messageStoreConfig.getBrokerRole()) {
+			this.msgPersistService.start();
+		}
 
         if (this.getMessageStoreConfig().isDuplicationEnable()) {
             this.reputMessageService.setReputFromOffset(this.commitLog.getConfirmOffset());
@@ -246,7 +255,6 @@ public class DefaultMessageStore implements MessageStore {
             this.scheduledExecutorService.shutdown();
 
             try {
-
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 log.error("shutdown Exception, ", e);
@@ -255,6 +263,10 @@ public class DefaultMessageStore implements MessageStore {
             if (this.scheduleMessageService != null) {
                 this.scheduleMessageService.shutdown();
             }
+            
+			if (this.msgPersistService != null) {
+				this.msgPersistService.shutdown();
+			}
 
             this.haService.shutdown();
 
@@ -663,6 +675,41 @@ public class DefaultMessageStore implements MessageStore {
 
         return null;
     }
+    
+	public MessageExt lookMessageByOffsetDeCompressBody(long commitLogOffset) {
+		SelectMappedBufferResult sbr = this.commitLog.getMessage(commitLogOffset, 4);
+		if (null != sbr) {
+			try {
+				// 1 TOTALSIZE
+				int size = sbr.getByteBuffer().getInt();
+				return lookMessageByOffsetDeCompressBody(commitLogOffset, size);
+			} finally {
+				sbr.release();
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * only deCompressBody=true
+	 * 
+	 * @param commitLogOffset
+	 * @param size
+	 * @return
+	 */
+	public MessageExt lookMessageByOffsetDeCompressBody(long commitLogOffset, int size) {
+		SelectMappedBufferResult sbr = this.commitLog.getMessage(commitLogOffset, size);
+		if (null != sbr) {
+			try {
+				return MessageDecoder.decode(sbr.getByteBuffer(), true, true);
+			} finally {
+				sbr.release();
+			}
+		}
+
+		return null;
+	}    
 
     @Override
     public SelectMappedBufferResult selectOneMessageByOffset(long commitLogOffset) {
@@ -1760,6 +1807,15 @@ public class DefaultMessageStore implements MessageStore {
 
                             if (dispatchRequest.isSuccess()) {
                                 if (size > 0) {
+                            		final ConsumeQueue cq = DefaultMessageStore.this.findConsumeQueue(
+											dispatchRequest.getTopic(), dispatchRequest.getQueueId());
+									long consumeQueueMaxPhysicOffset = 0;
+									if (cq != null) {
+										// 在更新consumeQueue前先拿到consumeQueue的maxPhysicOffset
+										consumeQueueMaxPhysicOffset = cq.getMaxPhysicOffset();
+									}
+                                	
+									// 把msg信息存入到consumeQueue中
                                     DefaultMessageStore.this.doDispatch(dispatchRequest);
 
                                     if (BrokerRole.SLAVE != DefaultMessageStore.this.getMessageStoreConfig().getBrokerRole()
@@ -1778,6 +1834,24 @@ public class DefaultMessageStore implements MessageStore {
                                         DefaultMessageStore.this.storeStatsService
                                             .getSinglePutMessageTopicSizeTotal(dispatchRequest.getTopic())
                                             .addAndGet(dispatchRequest.getMsgSize());
+                                        
+                        				// 消息分发到队列，存到mongo
+										if (DefaultMessageStore.this.msgPersistService != null) {
+											log.info(">>>>>>>>>>>>>consumeQueueMaxPhysicOffset:"
+													+ consumeQueueMaxPhysicOffset);
+
+											if (dispatchRequest.getCommitLogOffset() > consumeQueueMaxPhysicOffset) {
+												// 在数据恢复时不会走到这个流程，但是如果重新同步slave数据会走到这里
+												MessageExt msg = DefaultMessageStore.this
+														.lookMessageByOffsetDeCompressBody(
+																dispatchRequest.getCommitLogOffset());
+												log.info(">>>>>>>>>>>>>msg:" + msg);
+												if (msg != null) {
+													DefaultMessageStore.this.msgPersistService.putMessage(msg);
+												}
+											}
+										}  
+										
                                     }
                                 } else if (size == 0) {
                                     this.reputFromOffset = DefaultMessageStore.this.commitLog.rollNextFile(this.reputFromOffset);

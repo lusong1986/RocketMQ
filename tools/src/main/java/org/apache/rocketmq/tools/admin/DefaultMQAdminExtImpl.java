@@ -19,6 +19,7 @@ package org.apache.rocketmq.tools.admin;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,6 +30,8 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.client.QueryResult;
 import org.apache.rocketmq.client.admin.MQAdminExtInner;
@@ -47,7 +50,6 @@ import org.apache.rocketmq.common.admin.RollbackStats;
 import org.apache.rocketmq.common.admin.TopicOffset;
 import org.apache.rocketmq.common.admin.TopicStatsTable;
 import org.apache.rocketmq.common.help.FAQUrl;
-import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.common.message.MessageClientExt;
 import org.apache.rocketmq.common.message.MessageConst;
 import org.apache.rocketmq.common.message.MessageDecoder;
@@ -75,6 +77,7 @@ import org.apache.rocketmq.common.protocol.route.BrokerData;
 import org.apache.rocketmq.common.protocol.route.QueueData;
 import org.apache.rocketmq.common.protocol.route.TopicRouteData;
 import org.apache.rocketmq.common.subscription.SubscriptionGroupConfig;
+import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.remoting.common.RemotingUtil;
@@ -158,6 +161,160 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
                 break;
         }
     }
+    
+
+	/**
+	 * 
+	 * online consumer by clientIp
+	 * 
+	 * @param consumerGroup
+	 * @param clientIp
+	 * @return
+	 * @throws RemotingException
+	 * @throws MQClientException
+	 * @throws InterruptedException
+	 * @throws MQBrokerException
+	 */
+	@Override
+	public Map<String, Boolean> onlineConsumerClientIdsByGroup(final String consumerGroup, final String clientIp)
+			throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
+		final Collection<BrokerData> brokerDatas = this.examineBrokerClusterInfo().getBrokerAddrTable().values();
+		if (null == brokerDatas || brokerDatas.size() == 0) {
+			throw new MQClientException("Not found the broker data", null);
+		}
+
+		Map<String, Boolean> map = new HashMap<String, Boolean>();
+		final Iterator<BrokerData> iterator = brokerDatas.iterator();
+		while (iterator.hasNext()) {
+			final BrokerData brokerData = iterator.next();
+			final String brokAddr = brokerData.selectBrokerAddr();
+			log.info(">>>>>>>>>>onlineConsumerClientIdsByGroup broker addr:" + brokAddr);
+
+			if (brokAddr != null) {
+				boolean online = this.mqClientInstance.getMQClientAPIImpl().onlineConsumerClientIdsByGroup(brokAddr,
+						consumerGroup, clientIp, 5000);
+				map.put(brokAddr, online);
+			}
+		}
+
+		return map;
+	}
+
+	/**
+	 * 
+	 * offline consumer by clientids
+	 * 
+	 * @param consumerGroup
+	 * @param clientIds clientIp or clientId
+	 * @return
+	 * @throws RemotingException
+	 * @throws MQClientException
+	 * @throws InterruptedException
+	 * @throws MQBrokerException
+	 */
+	@Override
+	public Map<String, Boolean> offlineConsumerClientIdsByGroup(final String consumerGroup, final String clientIds)
+			throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
+		final Collection<BrokerData> brokerDatas = this.examineBrokerClusterInfo().getBrokerAddrTable().values();
+		if (null == brokerDatas || brokerDatas.size() == 0) {
+			throw new MQClientException("Not found the broker data", null);
+		}
+
+		final Map<String, Boolean> map = new HashMap<String, Boolean>();
+		final Iterator<BrokerData> iterator = brokerDatas.iterator();
+		while (iterator.hasNext()) {
+			final BrokerData brokerData = iterator.next();
+			final String brokAddr = brokerData.selectBrokerAddr();
+			log.info(">>>>>>>>>>offlineConsumerClientIdsByGroup broker addr:" + brokAddr);
+
+			if (brokAddr != null) {
+				boolean offline = this.mqClientInstance.getMQClientAPIImpl().offlineConsumerClientIdsByGroup(brokAddr,
+						consumerGroup, clientIds, 5000);
+				map.put(brokAddr, offline);
+			}
+		}
+
+		return map;
+	}
+
+	public Map<String, ConsumerConnection> examineConsumerConnectionInfoByBroker(String consumerGroup)
+			throws InterruptedException, MQBrokerException, RemotingException, MQClientException {
+		String topic = MixAll.getRetryTopic(consumerGroup);
+		TopicRouteData topicRouteData = this.examineTopicRouteInfo(topic);
+
+		final Map<String, ConsumerConnection> map = new ConcurrentHashMap<String, ConsumerConnection>();
+		for (BrokerData bd : topicRouteData.getBrokerDatas()) {
+			String addr = bd.selectBrokerAddr();
+			if (addr != null) {
+				try {
+					final ConsumerConnection consumerConnectionList = this.mqClientInstance.getMQClientAPIImpl()
+							.getConsumerConnectionList(addr, consumerGroup, 3000);
+					if (consumerConnectionList != null) {
+						map.put(addr, consumerConnectionList);
+					}
+				} catch (Exception e) {
+					log.warn("examineConsumerConnectionInfoByBroker warn:" + e.getMessage());
+				}
+			}
+		}
+
+		return map;
+	}
+
+	public String getQueuesByBrokerAndConsumerAddress(final String brokAddr, String consumerAddress)
+			throws RemotingException, MQClientException, InterruptedException, MQBrokerException,
+			UnsupportedEncodingException {
+		if (StringUtils.isEmpty(brokAddr)) {
+			throw new MQClientException("brokAddr is empty", null);
+		}
+
+		String queues = this.mqClientInstance.getMQClientAPIImpl().getQueuesByConsumerAddress(brokAddr,
+				consumerAddress, 5000);
+		return queues;
+	}
+
+	@Override
+	public Map<String, String> getQueuesByConsumerAddress(String consumerAddress) throws RemotingException,
+			MQClientException, InterruptedException, MQBrokerException, UnsupportedEncodingException {
+		Collection<BrokerData> brokerDatas = this.examineBrokerClusterInfo().getBrokerAddrTable().values();
+		if (null == brokerDatas || brokerDatas.size() == 0) {
+			throw new MQClientException("Not found the broker data", null);
+		}
+
+		Map<String, String> map = new HashMap<String, String>();
+		final Iterator<BrokerData> iterator = brokerDatas.iterator();
+		while (iterator.hasNext()) {
+			BrokerData brokerData = iterator.next();
+			final String brokAddr = brokerData.selectBrokerAddr();
+			log.info(">>>>>>>>>>getQueuesByConsumerAddress broker addr:" + brokAddr);
+
+			if (brokAddr != null) {
+				String queues = this.mqClientInstance.getMQClientAPIImpl().getQueuesByConsumerAddress(brokAddr,
+						consumerAddress, 5000);
+				map.put(brokAddr, queues);
+			}
+		}
+
+		return map;
+	}
+
+	@Override
+	public Set<String> examineProducerGroups() throws RemotingException, MQClientException, InterruptedException,
+			MQBrokerException {
+		Collection<BrokerData> brokerDatas = this.examineBrokerClusterInfo().getBrokerAddrTable().values();
+		if (null == brokerDatas || brokerDatas.size() == 0) {
+			throw new MQClientException("Not found the broker data", null);
+		}
+
+		BrokerData brokerData = brokerDatas.iterator().next();
+		String addr = brokerData.selectBrokerAddr();
+
+		if (addr != null) {
+			return this.mqClientInstance.getMQClientAPIImpl().getProducerList(addr, 3000);
+		}
+
+		throw new MQClientException("Not found the broker", null);
+	}    
 
     @Override
     public void updateBrokerConfig(String brokerAddr,
@@ -382,7 +539,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         MQClientException {
         if (addrs == null) {
             String ns = this.mqClientInstance.getMQClientAPIImpl().fetchNameServerAddr();
-            addrs = new HashSet(Arrays.asList(ns.split(";")));
+            addrs = new HashSet<String>(Arrays.asList(ns.split(";")));
         }
         for (String addr : addrs) {
             this.mqClientInstance.getMQClientAPIImpl().deleteTopicInNameServer(addr, topic, timeoutMillis);
@@ -545,7 +702,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
                     timeoutMillis);
             }
         }
-        return Collections.EMPTY_MAP;
+        return Collections.emptyMap();
     }
 
     public void createOrUpdateOrderConf(String key, String value,

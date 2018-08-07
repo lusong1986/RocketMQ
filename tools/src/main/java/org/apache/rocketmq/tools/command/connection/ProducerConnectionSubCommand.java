@@ -45,9 +45,9 @@ public class ProducerConnectionSubCommand implements SubCommand {
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("t", "topic", true, "topic name");
-        opt.setRequired(true);
-        options.addOption(opt);
+//        opt = new Option("t", "topic", true, "topic name");
+//        opt.setRequired(true);
+//        options.addOption(opt);
 
         return options;
     }

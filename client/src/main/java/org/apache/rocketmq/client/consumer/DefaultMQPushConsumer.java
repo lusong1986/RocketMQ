@@ -24,7 +24,7 @@ import org.apache.rocketmq.client.QueryResult;
 import org.apache.rocketmq.client.consumer.listener.MessageListener;
 import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;
 import org.apache.rocketmq.client.consumer.listener.MessageListenerOrderly;
-import org.apache.rocketmq.client.consumer.rebalance.AllocateMessageQueueAveragely;
+import org.apache.rocketmq.client.consumer.rebalance.AllocateMessageQueueConsistentHash;
 import org.apache.rocketmq.client.consumer.store.OffsetStore;
 import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
@@ -250,7 +250,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
      * Default constructor.
      */
     public DefaultMQPushConsumer() {
-        this(MixAll.DEFAULT_CONSUMER_GROUP, null, new AllocateMessageQueueAveragely());
+        this(MixAll.DEFAULT_CONSUMER_GROUP, null, new AllocateMessageQueueConsistentHash());
     }
 
     /**
@@ -273,7 +273,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
      * @param rpcHook RPC hook to execute before each remoting command.
      */
     public DefaultMQPushConsumer(RPCHook rpcHook) {
-        this(MixAll.DEFAULT_CONSUMER_GROUP, rpcHook, new AllocateMessageQueueAveragely());
+        this(MixAll.DEFAULT_CONSUMER_GROUP, rpcHook, new AllocateMessageQueueConsistentHash());
     }
 
     /**
@@ -282,7 +282,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
      * @param consumerGroup Consumer group.
      */
     public DefaultMQPushConsumer(final String consumerGroup) {
-        this(consumerGroup, null, new AllocateMessageQueueAveragely());
+        this(consumerGroup, null, new AllocateMessageQueueConsistentHash());
     }
 
     @Override

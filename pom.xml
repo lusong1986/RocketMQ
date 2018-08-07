@@ -45,53 +45,6 @@
         <tag>rocketmq-all-4.3.0</tag>
     </scm>
 
-    <mailingLists>
-        <mailingList>
-            <name>Development List</name>
-            <subscribe>dev-subscribe@rocketmq.apache.org</subscribe>
-            <unsubscribe>dev-unsubscribe@rocketmq.apache.org</unsubscribe>
-            <post>dev@rocketmq.apache.org</post>
-        </mailingList>
-        <mailingList>
-            <name>User List</name>
-            <subscribe>users-subscribe@rocketmq.apache.org</subscribe>
-            <unsubscribe>users-unsubscribe@rocketmq.apache.org</unsubscribe>
-            <post>users@rocketmq.apache.org</post>
-        </mailingList>
-        <mailingList>
-            <name>Commits List</name>
-            <subscribe>commits-subscribe@rocketmq.apache.org</subscribe>
-            <unsubscribe>commits-unsubscribe@rocketmq.apache.org</unsubscribe>
-            <post>commits@rocketmq.apache.org</post>
-        </mailingList>
-    </mailingLists>
-
-    <developers>
-        <developer>
-            <id>Apache RocketMQ</id>
-            <name>Apache RocketMQ of ASF</name>
-            <url>https://rocketmq.apache.org/</url>
-        </developer>
-    </developers>
-
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-
-    <organization>
-        <name>Apache Software Foundation</name>
-        <url>http://www.apache.org</url>
-    </organization>
-
-    <issueManagement>
-        <system>jira</system>
-        <url>https://issues.apache.org/jira/browse/RocketMQ</url>
-    </issueManagement>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -100,8 +53,8 @@
         <maven.test.skip>false</maven.test.skip>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <!-- Compiler settings properties -->
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
         <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
         <!-- Exclude all generated code -->
         <sonar.jacoco.itReportPath>${project.basedir}/../test/target/jacoco-it.exec</sonar.jacoco.itReportPath>
@@ -204,22 +157,6 @@
                         <goals>
                             <goal>jar</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-help-plugin</artifactId>
-                <version>2.2</version>
-                <executions>
-                    <execution>
-                        <id>generate-effective-dependencies-pom</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>effective-pom</goal>
-                        </goals>
-                        <configuration>
-                            <output>${project.build.directory}/effective-pom/effective-dependencies.xml</output>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -603,6 +540,12 @@
                 <artifactId>log4j-slf4j-impl</artifactId>
                 <version>2.7</version>
             </dependency>
+            
+			<dependency>
+			    <groupId>org.mongodb</groupId>
+			    <artifactId>mongo-java-driver</artifactId>
+			    <version>3.8.0</version>
+			</dependency>            
         </dependencies>
     </dependencyManagement>
 </project>
